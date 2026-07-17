@@ -613,6 +613,84 @@ button.cta:focus-visible{ outline: 2px solid var(--gold); outline-offset:3px; }
   border:1px dashed var(--gold); background: var(--paper-hi);
   font-size:13.5px; font-style:italic; color: var(--ink); text-align:left;
 }
+
+/* ---------- Testimonial / Social Proof ---------- */
+.testimonial-section{ margin: 8px 0 0; }
+.testimonial-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+@media (max-width: 640px){
+  .testimonial-grid{ grid-template-columns: 1fr; }
+}
+.testimonial-card{
+  background: var(--paper-hi);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 20px 18px;
+  position: relative;
+}
+.testimonial-stars{
+  color: var(--gold);
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.testimonial-quote{
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+.testimonial-footer{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.testimonial-avatar{
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--teal-soft);
+  color: var(--teal);
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink:0;
+}
+.testimonial-name{
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  font-weight: 500;
+}
+.testimonial-meta{
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.testimonial-loading, .testimonial-error{
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align:center;
+  padding: 20px 0;
+}
+.testimonial-write-wrap{
+  text-align:center;
+  margin-top: 22px;
+}
+.btn-testimoni-cta{
+  display:inline-block; width:auto; text-decoration:none; box-sizing:border-box;
+  font-family: var(--font-mono); font-size:13px; letter-spacing:0.05em; text-transform:uppercase;
+  background: var(--gold); color: var(--ink); font-weight:600;
+  border: none; border-radius:999px; padding:14px 30px;
+  box-shadow: 0 4px 14px rgba(201,162,39,0.4);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.btn-testimoni-cta:hover{ transform: translateY(-2px); box-shadow: 0 6px 18px rgba(201,162,39,0.5); }
+.btn-testimoni-cta:active{ transform: translateY(0); }
 </style>
 </head>
 <body>
@@ -694,6 +772,12 @@ const UI = {
   footerBrand: {id:'Bagian dari ekosistem <b>SekarSoulPath</b> — kebijaksanaan kuno Nusantara, untuk hubungan yang lebih sadar.', en:'Part of the <b>SekarSoulPath</b> ecosystem — ancient Nusantara wisdom, for more conscious relationships.'},
   printBtn: {id:'🖨 Cetak / Simpan PDF', en:'🖨 Print / Save PDF'},
   tagline: {id:'DUA JIWA · DUA PERJALANAN · SATU KESADARAN', en:'TWO SOULS · TWO JOURNEYS · ONE CONSCIOUSNESS'},
+
+  testimonialHeading: {id:'Kata Mereka yang Sudah Mencoba', en:'What Others Are Saying'},
+  testimonialNote: {id:'Pengalaman nyata dari pengguna Ardhanareswari Blueprint.', en:'Real experiences from Ardhanareswari Blueprint users.'},
+  testimonialLoading: {id:'Memuat testimoni…', en:'Loading testimonials…'},
+  testimonialError: {id:'Testimoni belum bisa dimuat saat ini.', en:'Testimonials could not be loaded right now.'},
+  testimonialWriteBtn: {id:'✍️ Tulis Testimoni Kamu', en:'✍️ Write Your Testimonial'},
 
   historyTitle: {id:'Riwayat Pembacaan', en:'Reading History'},
   historyClear: {id:'Hapus semua', en:'Clear all'},
@@ -2160,6 +2244,17 @@ function renderResults(nameA, nameB, metaA, metaB, scrollTo){
 
     ${lockedSectionsData.slice(15).map(s => renderLockedSection(s, L)).join('')}
 
+    <div class="testimonial-section">
+      <div class="section-heading" style="justify-content:center;">${UI.testimonialHeading[L]}</div>
+      <p class="section-note" style="text-align:center;">${UI.testimonialNote[L]}</p>
+      <div id="testimonial-container" class="testimonial-grid">
+        <p class="testimonial-loading">${UI.testimonialLoading[L]}</p>
+      </div>
+      <div class="testimonial-write-wrap">
+        <a class="btn-testimoni-cta" href="https://forms.gle/jpxDuUXaPHpRLj9q8" target="_blank" rel="noopener">${UI.testimonialWriteBtn[L]}</a>
+      </div>
+    </div>
+
     <div class="unlock-cta">
       <h3>${L==='en' ? 'Complete Blueprint Portrait' : 'Potret Blueprint Lengkap'}</h3>
       <p>${L==='en'
@@ -2216,6 +2311,137 @@ function renderResults(nameA, nameB, metaA, metaB, scrollTo){
     const fill = document.getElementById('meter-fill');
     if(fill) fill.style.width = bond.score + '%';
   }, 100);
+  loadTestimonials(L);
+}
+
+/* ---------- Testimonial / Social Proof (Google Sheet) ---------- */
+
+// TODO: Tempel di sini link CSV publik dari tab "Form Responses 1" (bukan tab utama).
+// Cara ambil link: buka Sheet -> pilih tab "Form Responses 1" -> File -> Share ->
+// Publish to web -> pilih tab tsb -> format "Comma-separated values (.csv)" -> Publish -> copy link.
+// Kolom yang diharapkan (header baris pertama, urutan bebas):
+// Nama, Kota, Testimoni, Rating, Tampilkan
+// Hanya baris dengan kolom "Tampilkan" = "ya"/"yes"/"true" yang akan ditampilkan di web.
+const TESTIMONIAL_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1Kg2dBpdSkEM7zEzV1yaFK_b6vb711YjdhQnDxp3yngA/export?format=csv&gid=1131385812';
+
+const TESTIMONIAL_FALLBACK = [
+  { nama:'Ayu', testimoni: {id:'Blueprint ini bikin aku dan pasangan jadi lebih paham cara masing-masing mengekspresikan cinta. Sangat direkomendasikan.', en:'This blueprint helped me and my partner understand how we each express love. Highly recommended.'}, rating:5, kota:'Denpasar' },
+  { nama:'Rangga', testimoni: {id:'Awalnya cuma iseng coba, tapi hasilnya cukup mendalam dan relevan sama hubungan kami.', en:"I tried it just for fun at first, but the results were surprisingly deep and relevant to our relationship."}, rating:5, kota:'Bandung' },
+  { nama:'Sinta', testimoni: {id:'Penjelasan tentang pola konfliknya kena banget. Jadi bahan diskusi bagus buat kami berdua.', en:'The conflict-pattern explanation really hit home. Became a great talking point for the two of us.'}, rating:4, kota:'Yogyakarta' },
+  { nama:'Bagas', testimoni: {id:'Suka sama pendekatannya yang reflektif, bukan sekadar ramalan. Worth it buat yang serius sama pasangan.', en:'I like the reflective approach, not just fortune-telling. Worth it if you\u2019re serious about your relationship.'}, rating:5, kota:'Surabaya' }
+];
+
+let testimonialCache = null;
+
+function loadTestimonials(lang){
+  const container = document.getElementById('testimonial-container');
+  if(!container) return;
+
+  if(testimonialCache){
+    renderTestimonialCards(testimonialCache, lang);
+    return;
+  }
+
+  if(!TESTIMONIAL_SHEET_URL){
+    // Belum ada link Google Sheet: pakai data contoh sementara.
+    testimonialCache = TESTIMONIAL_FALLBACK.map(t => ({
+      nama: t.nama,
+      testimoni: t.testimoni[lang] || t.testimoni.id,
+      rating: t.rating,
+      kota: t.kota
+    }));
+    renderTestimonialCards(testimonialCache, lang);
+    return;
+  }
+
+  fetch(TESTIMONIAL_SHEET_URL)
+    .then(res => {
+      if(!res.ok) throw new Error('Gagal memuat sheet');
+      return res.text();
+    })
+    .then(csvText => {
+      const rows = parseCSV(csvText);
+      if(!rows.length) throw new Error('Sheet kosong');
+      testimonialCache = rows;
+      renderTestimonialCards(rows, lang);
+    })
+    .catch(() => {
+      const L = lang;
+      container.innerHTML = `<p class="testimonial-error">${UI.testimonialError[L]}</p>`;
+    });
+}
+
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/);
+  if(lines.length < 2) return [];
+  const headers = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+  const rows = [];
+  for(let i = 1; i < lines.length; i++){
+    if(!lines[i].trim()) continue;
+    const cols = splitCSVLine(lines[i]);
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = (cols[idx] || '').trim(); });
+    const tampilkanRaw = (row['tampilkan'] || row['approved'] || row['show'] || '').toLowerCase();
+    const approved = ['ya', 'yes', 'true', '1', 'y'].includes(tampilkanRaw);
+    if(!approved) continue; // hanya testimoni yang sudah di-approve yang ditampilkan
+    rows.push({
+      nama: row['nama'] || row['name'] || '',
+      testimoni: row['testimoni'] || row['testimonial'] || row['review'] || '',
+      rating: parseInt(row['rating'], 10) || 5,
+      kota: row['kota'] || row['city'] || ''
+    });
+  }
+  return rows.filter(r => r.nama && r.testimoni);
+}
+
+// Parser sederhana yang menangani koma di dalam tanda kutip ("...")
+function splitCSVLine(line){
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for(let i = 0; i < line.length; i++){
+    const ch = line[i];
+    if(ch === '"'){
+      if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; }
+      else{ inQuotes = !inQuotes; }
+    } else if(ch === ',' && !inQuotes){
+      result.push(cur); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function renderTestimonialCards(rows, lang){
+  const container = document.getElementById('testimonial-container');
+  if(!container) return;
+  container.innerHTML = rows.map(t => {
+    const initial = (t.nama || '?').trim().charAt(0).toUpperCase();
+    const stars = '★'.repeat(Math.max(1, Math.min(5, t.rating))) + '☆'.repeat(5 - Math.max(1, Math.min(5, t.rating)));
+    return `
+      <div class="testimonial-card">
+        <div class="testimonial-stars">${stars}</div>
+        <p class="testimonial-quote">"${escapeHTML(t.testimoni)}"</p>
+        <div class="testimonial-footer">
+          <div class="testimonial-avatar">${initial}</div>
+          <div>
+            <div class="testimonial-name">${escapeHTML(t.nama)}</div>
+            ${t.kota ? `<div class="testimonial-meta">${escapeHTML(t.kota)}</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHTML(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function renderCoordCard(name, meta, lang){
