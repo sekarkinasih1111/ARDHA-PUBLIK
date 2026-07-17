@@ -265,6 +265,59 @@ button.cta:focus-visible{ outline: 2px solid var(--gold); outline-offset:3px; }
   display:none;
 }
 
+/* ---------- Sticky unlock bar ---------- */
+#sticky-cta{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 40;
+  display:none;
+  background: var(--ink);
+  color: var(--paper-hi);
+  padding: 12px 18px;
+  box-shadow: 0 -6px 20px rgba(20,33,61,0.25);
+}
+#sticky-cta.show{ display:flex; }
+#sticky-cta .sticky-inner{
+  max-width: 920px;
+  margin: 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+#sticky-cta .sticky-copy{ font-size: 12.5px; line-height:1.35; }
+#sticky-cta .sticky-copy b{ display:block; font-family: var(--font-display); font-size:15px; font-weight:500; }
+#sticky-cta .sticky-copy span{ color: rgba(247,242,231,0.72); }
+#sticky-cta button.cta{
+  padding: 11px 22px;
+  font-size: 12px;
+  flex-shrink: 0;
+  background: var(--gold);
+  color: var(--ink);
+}
+#sticky-cta button.cta:hover{ background:#dbb437; }
+@media (max-width:520px){
+  #sticky-cta .sticky-copy b{ font-size:13.5px; }
+}
+
+/* ---------- Trust / urgency micro-elements ---------- */
+.trust-row{
+  display:flex; flex-wrap:wrap; gap:10px 18px; justify-content:center;
+  margin: 14px 0 4px; font-size: 12px; color: var(--ink-soft);
+}
+.trust-row span{ display:flex; align-items:center; gap:6px; }
+.guarantee-box{
+  margin-top: 16px; padding: 14px 16px; border-radius: 12px;
+  background: var(--teal-soft); border: 1px solid var(--teal);
+  font-size: 12.5px; line-height:1.5; text-align:left;
+}
+.guarantee-box b{ color: var(--teal); }
+.slots-note{
+  font-family: var(--font-mono); font-size: 11.5px; letter-spacing:0.04em;
+  color: var(--rose); margin: 6px 0 0;
+}
+
 /* ---------- Manual override ---------- */
 .manual-toggle{
   background:none;
@@ -742,6 +795,13 @@ button.cta:focus-visible{ outline: 2px solid var(--gold); outline-offset:3px; }
 
   <div id="results"></div>
 
+  <div id="sticky-cta">
+    <div class="sticky-inner">
+      <div class="sticky-copy" id="sticky-copy"></div>
+      <button type="button" class="cta" onclick="scrollToPayment()" id="sticky-cta-btn"></button>
+    </div>
+  </div>
+
   <p class="footer-brand" id="footer-brand-text">Bagian dari ekosistem <b>SekarSoulPath</b> — kebijaksanaan kuno Nusantara, untuk hubungan yang lebih sadar.</p>
 </div>
 
@@ -749,6 +809,10 @@ button.cta:focus-visible{ outline: 2px solid var(--gold); outline-offset:3px; }
 // ==========================================================
 // STATE
 // ==========================================================
+// EDIT INI: isi dengan angka jujur kalau mau menampilkan kuota early access
+// tersisa (mis. 12). Biarkan null untuk menyembunyikan baris ini sama sekali.
+const EARLY_ACCESS_SLOTS = null;
+
 const LANG = { current: 'id' };
 let lastState = null; // {nameA, nameB, metaA, metaB} — untuk render ulang saat ganti bahasa
 
@@ -2128,64 +2192,65 @@ form.addEventListener('submit', function(e){
 
 const lockedSectionsData = [
   { idx:'02', headingKey:'s02Heading', teaser:{
-      id:'Ada satu energi yang lebih dominan di antara kalian berdua — dan itu memengaruhi siapa yang biasanya mengalah lebih dulu saat berbeda pendapat…',
-      en:'One of you carries a more dominant energy — and it shapes who usually gives in first when you disagree…' } },
+      id:'Salah satu dari kalian — {A} atau {B} — ternyata memegang energi yang lebih dominan dalam hubungan ini. Bab ini menyebut namanya secara langsung, dan menjelaskan kenapa dialah yang selama ini lebih sering mengalah duluan…',
+      en:'One of you — {A} or {B} — actually carries the more dominant energy in this bond. This chapter names exactly who, and why they\u2019re the one who usually gives in first…' } },
   { idx:'03', headingKey:'s03Heading', teaser:{
-      id:'Saat kalian berselisih, ada satu pola yang selalu muncul tanpa disadari oleh kalian berdua…',
-      en:'When you clash, one pattern keeps resurfacing without either of you quite noticing…' } },
+      id:'Setiap kali {A} dan {B} berselisih, ada satu pola berulang yang selalu muncul di detik-detik yang sama — dan kalian berdua belum pernah benar-benar menyadarinya…',
+      en:'Every time {A} and {B} clash, the exact same pattern kicks in at the exact same moment — and neither of you has ever quite named it…' } },
   { idx:'04', headingKey:'sWhyHeading', teaser:{
-      id:'Ada alasan spiritual spesifik mengapa semesta mempertemukan kalian berdua — dan itu tersimpan dalam angka Patemon kalian…',
-      en:'There is a specific spiritual reason the universe brought you two together — held in your Patemon number…' } },
+      id:'Ada alasan spiritual spesifik kenapa semesta memilih mempertemukan {A} dengan {B} — tersimpan dalam satu angka Patemon yang jarang diketahui orang…',
+      en:'There is a specific spiritual reason the universe chose to bring {A} and {B} together — held in one rarely-known Patemon number…' } },
   { idx:'05', headingKey:'sMissionHeading', teaser:{
-      id:'Setiap pasangan punya "tugas" tersembunyi dalam hubungannya. Tugas kalian berdua ternyata cukup spesifik…',
-      en:'Every couple carries a hidden "assignment" in their relationship. Yours turns out to be quite specific…' } },
+      id:'Setiap pasangan membawa "tugas" tersembunyi. Punya {A} dan {B} ternyata jauh lebih spesifik dari sekadar "saling melengkapi" — dan bisa jadi ini yang selama ini terasa tapi belum bisa dijelaskan…',
+      en:'Every couple carries a hidden "assignment." {A} and {B}\u2019s turns out to be far more specific than just "you complete each other" — the kind of thing you\u2019ve felt but never had words for…' } },
   { idx:'06', headingKey:'s04Heading', teaser:{
-      id:'Wuku kelahiran kalian menyimpan sifat bawaan keluarga yang ternyata masih memengaruhi cara kalian berumah tangga hari ini…',
-      en:'Your birth wuku carries inherited family traits that still shape how you build a home together today…' } },
+      id:'Wuku kelahiran {A} dan {B} menyimpan warisan sifat keluarga yang, tanpa disadari, masih ikut menentukan cara kalian berumah tangga hari ini…',
+      en:'{A} and {B}\u2019s birth wuku carries inherited family traits that — without either of you realizing — still shape how you run a household together today…' } },
   { idx:'07', headingKey:'s05Heading', teaser:{
-      id:'Kombinasi elemen kalian berdua membuka satu peluang rezeki yang sering terlewat begitu saja…',
-      en:'Your combined elements open up a fortune opportunity that often gets overlooked…' } },
+      id:'Kombinasi elemen {A} dan {B} membuka satu peluang rezeki yang selama ini nyaris selalu terlewat begitu saja…',
+      en:'{A} and {B}\u2019s combined elements open up a fortune opportunity that almost always slips right past unnoticed…' } },
   { idx:'08', headingKey:'s06Heading', teaser:{
-      id:'Ada satu kebiasaan kecil yang diam-diam memengaruhi rasa aman kalian berdua setiap hari…',
-      en:'One small habit quietly shapes how safe you both feel, day after day…' } },
+      id:'Ada satu kebiasaan kecil dari {A} atau {B} yang diam-diam menentukan apakah pasangannya merasa aman atau tidak, setiap hari…',
+      en:'One small habit — either {A}\u2019s or {B}\u2019s — quietly decides whether the other feels safe, day after day…' } },
   { idx:'09', headingKey:'s07Heading', teaser:{
-      id:'Ada pola dari masa lalu yang, tanpa disadari, masih terus terulang dalam hubungan kalian sekarang…',
-      en:'A pattern from the past keeps repeating in your relationship now, without either of you realizing it…' } },
+      id:'Ada pola dari masa lalu {A} atau {B} yang, tanpa disadari keduanya, masih terus terulang dalam hubungan ini sampai sekarang…',
+      en:'A pattern from {A}\u2019s or {B}\u2019s past keeps quietly repeating itself in this relationship, right up to today…' } },
   { idx:'10', headingKey:'sPotentialHeading', teaser:{
-      id:'Ada satu potensi terbesar dalam hubungan kalian yang, kalau disadari, bisa jadi kekuatan utama kalian berdua…',
-      en:'There is one major potential in your bond that, once recognized, could become your greatest shared strength…' } },
+      id:'Ada satu potensi terbesar dalam hubungan {A} dan {B} yang, begitu disadari, bisa langsung jadi kekuatan utama kalian berdua…',
+      en:'There is one major potential in {A} and {B}\u2019s bond that, once recognized, could instantly become your greatest shared strength…' } },
   { idx:'11', headingKey:'sChallengeHeading', teaser:{
-      id:'Ada satu tantangan utama yang cenderung diabaikan pasangan pada umumnya — dan itu juga berlaku untuk kalian berdua…',
-      en:'There is one main challenge most couples tend to overlook — and it applies to you both too…' } },
+      id:'Ada satu tantangan utama yang paling sering diabaikan pasangan pada umumnya — dan bab ini menunjukkan persis bagaimana bentuknya pada {A} dan {B}…',
+      en:'There is one core challenge most couples overlook entirely — and this chapter shows exactly what shape it takes for {A} and {B}…' } },
   { idx:'12', headingKey:'sWoundHeading', teaser:{
-      id:'Kalian berdua mungkin saling memantulkan luka yang sama tanpa disadari — dan itu bisa jadi sumber gesekan berulang…',
-      en:'You may be mirroring the same wound in each other without realizing it — a possible source of recurring friction…' } },
+      id:'{A} dan {B} kemungkinan besar saling memantulkan luka yang sama tanpa disadari — dan ini bisa jadi akar dari gesekan yang terus berulang…',
+      en:'{A} and {B} are likely mirroring the exact same wound in each other without realizing it — a possible root of the friction that keeps coming back…' } },
   { idx:'13', headingKey:'sLoveHeading', teaser:{
-      id:'Cara kalian berdua merasa dicintai ternyata bisa sangat berbeda — dan kesalahpahaman kecil sering bermula dari sini…',
-      en:'The way you each feel loved can be surprisingly different — and small misunderstandings often start right here…' } },
+      id:'Cara {A} merasa dicintai bisa jauh berbeda dari cara {B} merasa dicintai — dan kesalahpahaman kecil di antara kalian sering bermula persis di sini…',
+      en:'The way {A} feels loved can be strikingly different from the way {B} does — and your small misunderstandings often start right here…' } },
   { idx:'14', headingKey:'sConflictHeading', teaser:{
-      id:'Ada satu pemicu konflik yang berulang kali muncul di antara kalian, meski sering tidak disadari sebagai penyebab utamanya…',
-      en:'There is one recurring conflict trigger between you, even if it rarely gets recognized as the real cause…' } },
+      id:'Ada satu pemicu konflik yang terus berulang di antara {A} dan {B}, meski hampir tidak pernah dikenali sebagai penyebab yang sebenarnya…',
+      en:'There is one recurring conflict trigger between {A} and {B} that almost never gets recognized as the real cause…' } },
   { idx:'15', headingKey:'sRealignHeading', teaser:{
-      id:'Ada cara spesifik untuk kembali menemukan keselarasan setelah kalian berselisih — dan itu ternyata cukup sederhana…',
-      en:'There is a specific way to find your way back to alignment after a clash — and it turns out to be surprisingly simple…' } },
+      id:'Ada satu cara spesifik bagi {A} dan {B} untuk kembali selaras setelah berselisih — dan ternyata jauh lebih sederhana dari yang kalian kira…',
+      en:'There is one specific way for {A} and {B} to find their way back to each other after a clash — and it\u2019s far simpler than you\u2019d expect…' } },
   { idx:'16', headingKey:'s08Heading', teaser:{
-      id:'Ada satu arah yang, kalau disadari lebih awal, bisa mempercepat pertumbuhan kalian berdua…',
-      en:'There is one direction that, if noticed early, could speed up your growth together…' } },
+      id:'Ada satu arah pertumbuhan yang, kalau {A} dan {B} sadari lebih awal, bisa mempercepat perjalanan kalian berdua secara signifikan…',
+      en:'There is one growth direction that, if {A} and {B} notice it early, could significantly speed up your journey together…' } },
   { idx:'18', headingKey:'s10Heading', teaser:{
-      id:'Ada satu langkah kecil dan ritual sederhana yang bisa langsung kalian coba malam ini juga…',
-      en:'There is one small step and a simple ritual you could try together tonight…' } },
+      id:'Ada satu langkah kecil dan ritual sederhana, dirancang khusus untuk {A} dan {B}, yang bisa langsung kalian coba berdua malam ini juga…',
+      en:'There is one small step and a simple ritual, designed specifically for {A} and {B}, that you could try together tonight…' } },
   { idx:'19', headingKey:'sClosingHeading', teaser:{
-      id:'Ditutup dengan sepucuk surat personal untuk kalian berdua — ditulis khusus dari hasil pembacaan lengkap kalian…',
-      en:'Closed with a personal letter written just for the two of you — drawn from your complete reading…' } }
+      id:'Ditutup dengan sepucuk surat personal untuk {A} dan {B} — ditulis khusus dari seluruh hasil pembacaan kalian, bukan template umum…',
+      en:'Closed with a personal letter written just for {A} and {B} — drawn from your entire reading, not a generic template…' } }
 ];
 
-function renderLockedSection(s, L){
+function renderLockedSection(s, L, nameA, nameB){
+  const fill = (t) => t.split('{A}').join(nameA).split('{B}').join(nameB);
   return `
     <div class="section-heading">${s.idx} ${UI[s.headingKey][L]}</div>
     <div class="locked-card">
       <span class="locked-tag">🔒 ${L==='en' ? 'Part of the Complete Blueprint Portrait' : 'Bagian dari Potret Blueprint Lengkap'}</span>
-      <p>${s.teaser[L]}</p>
+      <p>${fill(s.teaser[L])}</p>
     </div>
   `;
 }
@@ -2226,7 +2291,7 @@ function renderResults(nameA, nameB, metaA, metaB, scrollTo){
       ${renderCoordCard(nameB, metaB, L)}
     </div>
 
-    ${lockedSectionsData.slice(0,15).map(s => renderLockedSection(s, L)).join('')}
+    ${lockedSectionsData.slice(0,15).map(s => renderLockedSection(s, L, nameA, nameB)).join('')}
 
     <div class="section-heading"><span class="idx">17</span> ${UI.s09Heading[L]}</div>
     <div class="bond-card">
@@ -2242,7 +2307,7 @@ function renderResults(nameA, nameB, metaA, metaB, scrollTo){
         : 'Skor ini baru permukaannya saja. Potret Lengkap mengungkap *mengapa* kalian mendapat skor ini \u2014 angka Patemon (tujuan pertemuan jiwa), akar pola Samaya Jiwa kalian, dan ritual spesifik yang cocok untuk jenis ikatan kalian.'}</div>
     </div>
 
-    ${lockedSectionsData.slice(15).map(s => renderLockedSection(s, L)).join('')}
+    ${lockedSectionsData.slice(15).map(s => renderLockedSection(s, L, nameA, nameB)).join('')}
 
     <div class="testimonial-section">
       <div class="section-heading" style="justify-content:center;">${UI.testimonialHeading[L]}</div>
@@ -2260,7 +2325,13 @@ function renderResults(nameA, nameB, metaA, metaB, scrollTo){
       <p>${L==='en'
         ? 'A 19-chapter in-depth, personalized analysis \u2014 covering why you were brought together, your shared mission, wounds you mirror in each other, love languages, conflict patterns, and the exact ritual matched to your bond \u2014 sent to you as a PDF report.'
         : 'Analisis mendalam 19 bab yang dipersonalisasi \u2014 mencakup mengapa kalian dipertemukan, misi bersama, luka yang saling terpantul, cara masing-masing merasa dicintai, pola konflik, hingga ritual spesifik untuk ikatan kalian \u2014 dikirim kepada Anda dalam bentuk laporan PDF.'}</p>
+      <div class="trust-row">
+        <span>🔒 ${L==='en' ? 'Your data stays private' : 'Data pribadi dijaga kerahasiaannya'}</span>
+        <span>✍️ ${L==='en' ? 'Personally written, not generic' : 'Diproses personal, bukan template umum'}</span>
+        <span>📄 ${L==='en' ? 'PDF report, ~15\u201320 pages' : 'Laporan PDF, sekitar 15\u201320 halaman'}</span>
+      </div>
       <button type="button" class="cta" onclick="scrollToPayment()">${L==='en' ? 'Unlock Blueprint Portrait' : 'Buka Potret Blueprint'}</button>
+      ${EARLY_ACCESS_SLOTS ? `<p class="slots-note">${L==='en' ? `Only ${EARLY_ACCESS_SLOTS} early-access slots left this batch` : `Tersisa ${EARLY_ACCESS_SLOTS} slot early access untuk batch ini`}</p>` : ''}
     </div>
 
     <div id="payment-section">
@@ -2286,7 +2357,14 @@ function renderResults(nameA, nameB, metaA, metaB, scrollTo){
 
         <div class="thankyou-box">
           <b>${L==='en' ? 'After you contact us' : 'Setelah Anda menghubungi kami'}</b>
-          ${L==='en' ? 'Thank you. Once your payment is confirmed, your Blueprint Portrait will be prepared personally using the Ardhanareswari Blueprint methodology and sent to you as a PDF report.' : 'Terima kasih. Setelah pembayaran dikonfirmasi, Potret Blueprint akan diproses secara personal menggunakan metodologi Ardhanareswari Blueprint dan dikirimkan kepada Anda dalam bentuk laporan PDF.'}
+          ${L==='en' ? 'Thank you. Once your payment is confirmed, your Blueprint Portrait will be prepared personally using the Ardhanareswari Blueprint methodology and sent to you as a PDF report \u2014 delivered to your WhatsApp/email within 1x24 hours.' : 'Terima kasih. Setelah pembayaran dikonfirmasi, Potret Blueprint akan diproses secara personal menggunakan metodologi Ardhanareswari Blueprint dan dikirimkan kepada Anda dalam bentuk laporan PDF \u2014 dikirim ke WhatsApp/email Anda dalam waktu maksimal 1x24 jam.'}
+        </div>
+
+        <div class="guarantee-box">
+          <b>${L==='en' ? 'Why you can trust this' : 'Kenapa ini aman untuk kamu coba'}</b><br>
+          ${L==='en'
+            ? 'This is fulfilled personally, not by an automated bot \u2014 every payment is verified by hand and your report is written specifically for your birth data. If anything about your order looks off (wrong name/date, payment not received, etc.), just message us on WhatsApp above and we\u2019ll sort it out directly.'
+            : 'Setiap pesanan diproses langsung oleh orangnya, bukan bot otomatis \u2014 setiap pembayaran diverifikasi manual dan laporan ditulis khusus sesuai data lahir kalian. Kalau ada yang kurang sesuai (nama/tanggal salah, pembayaran belum terdeteksi, dll), langsung hubungi kami via WhatsApp di atas dan akan kami bantu.'}
         </div>
       </div>
 
@@ -2312,6 +2390,34 @@ function renderResults(nameA, nameB, metaA, metaB, scrollTo){
     if(fill) fill.style.width = bond.score + '%';
   }, 100);
   loadTestimonials(L);
+  setupStickyCta(nameA, nameB, L);
+}
+
+/* ---------- Sticky unlock bar ---------- */
+let stickyObserver = null;
+function setupStickyCta(nameA, nameB, L){
+  const bar = document.getElementById('sticky-cta');
+  const copy = document.getElementById('sticky-copy');
+  const btn = document.getElementById('sticky-cta-btn');
+  if(!bar || !copy || !btn) return;
+
+  copy.innerHTML = L === 'en'
+    ? `<b>Unlock ${nameA} &amp; ${nameB}'s Complete Blueprint</b><span>19 personalized chapters · Rp555.000</span>`
+    : `<b>Buka Blueprint Lengkap ${nameA} &amp; ${nameB}</b><span>19 bab personal · Rp555.000</span>`;
+  btn.textContent = L === 'en' ? 'Unlock Now' : 'Buka Sekarang';
+
+  bar.classList.add('show');
+
+  const paymentSection = document.getElementById('payment-section');
+  if(paymentSection && 'IntersectionObserver' in window){
+    if(stickyObserver) stickyObserver.disconnect();
+    stickyObserver = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        bar.classList.toggle('show', !entry.isIntersecting);
+      });
+    }, { threshold: 0.1 });
+    stickyObserver.observe(paymentSection);
+  }
 }
 
 /* ---------- Testimonial / Social Proof (Google Sheet) ---------- */
