@@ -2493,31 +2493,70 @@ function loadTestimonials(lang){
     return;
   }
 
-  fetch(TESTIMONIAL_SHEET_URL)
+  const cacheBustUrl = TESTIMONIAL_SHEET_URL +
+    (TESTIMONIAL_SHEET_URL.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+
+  fetch(cacheBustUrl)
     .then(res => {
-      if(!res.ok) throw new Error('Gagal memuat sheet');
+      if(!res.ok) throw new Error('Gagal memuat sheet: HTTP ' + res.status);
       return res.text();
     })
     .then(csvText => {
       const rows = parseCSV(csvText);
-      if(!rows.length) throw new Error('Sheet kosong');
+      if(!rows.length) throw new Error('Sheet kosong atau tidak ada baris yang di-approve (TAMPILKAN=ya)');
       testimonialCache = rows;
       renderTestimonialCards(rows, lang);
     })
-    .catch(() => {
+    .catch(err => {
+      console.error('Gagal memuat testimoni:', err);
       const L = lang;
       container.innerHTML = `<p class="testimonial-error">${UI.testimonialError[L]}</p>`;
     });
 }
 
-function parseCSV(text){
-  const lines = text.trim().split(/\r?\n/);
-  if(lines.length < 2) return [];
-  const headers = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+// Parser CSV yang menangani koma DAN baris baru di dalam tanda kutip ("...")
+// (memproses seluruh teks sekaligus, bukan per-baris, supaya field multi-baris tidak rusak)
+function parseCSVRows(text){
   const rows = [];
-  for(let i = 1; i < lines.length; i++){
-    if(!lines[i].trim()) continue;
-    const cols = splitCSVLine(lines[i]);
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if(inQuotes){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += ch;
+      }
+    } else {
+      if(ch === '"'){
+        inQuotes = true;
+      } else if(ch === ','){
+        row.push(field); field = '';
+      } else if(ch === '\r'){
+        // diabaikan, baris baru ditangani saat ketemu \n
+      } else if(ch === '\n'){
+        row.push(field); field = '';
+        rows.push(row); row = [];
+      } else {
+        field += ch;
+      }
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+function parseCSV(text){
+  const allRows = parseCSVRows(text.trim());
+  if(allRows.length < 2) return [];
+  const headers = allRows[0].map(h => h.trim().toLowerCase());
+  const rows = [];
+  for(let i = 1; i < allRows.length; i++){
+    const cols = allRows[i];
+    if(cols.every(c => !c.trim())) continue; // lewati baris kosong
     const row = {};
     headers.forEach((h, idx) => { row[h] = (cols[idx] || '').trim(); });
     const tampilkanRaw = (row['tampilkan'] || row['approved'] || row['show'] || '').toLowerCase();
@@ -2531,26 +2570,6 @@ function parseCSV(text){
     });
   }
   return rows.filter(r => r.nama && r.testimoni);
-}
-
-// Parser sederhana yang menangani koma di dalam tanda kutip ("...")
-function splitCSVLine(line){
-  const result = [];
-  let cur = '';
-  let inQuotes = false;
-  for(let i = 0; i < line.length; i++){
-    const ch = line[i];
-    if(ch === '"'){
-      if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; }
-      else{ inQuotes = !inQuotes; }
-    } else if(ch === ',' && !inQuotes){
-      result.push(cur); cur = '';
-    } else {
-      cur += ch;
-    }
-  }
-  result.push(cur);
-  return result;
 }
 
 function renderTestimonialCards(rows, lang){
